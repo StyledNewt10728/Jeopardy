@@ -1,0 +1,24 @@
+/* some colors you may find useful:
+  #115ff4
+  #060ce9
+  #28a200
+  #8d2ab5
+  #74119c
+*/
+
+
+table {
+  background-color: #3d90e9;
+  height: auto;
+  width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+th {
+  height: auto;
+}
+
+table, th, td {
+  border: solid, 2px, #74119c;
+}
