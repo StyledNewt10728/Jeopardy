@@ -18,6 +18,19 @@
 //    ...
 //  ]
 
+const gameName = document.createElement("h1");
+gameName.textContent = "Jeopardy!";
+document.body.appendChild(gameName);
+
+const buttonStart = document.createElement("button");
+buttonStart.textContent = "Start!";
+buttonStart.addEventListener("click", () => {
+  // load.hide(); Still connected to the entire board, no idea why
+  $(setupAndStart);
+  buttonStart.textContent = "Restart?";
+});
+document.body.appendChild(buttonStart);
+
 let categories = [];
 const NUM_CATEGORIES = 6;
 const cat_count = 10;
@@ -58,8 +71,13 @@ async function getCategory(catId) {
   const resData = res.data;
   const title = resData.title;
   const allClues = resData.clues;
-  const randClues = _.sampleSize(allClues, 5);
-  return { title, randClues };
+  const randClues = _.sampleSize(allClues, NUM_QUESTIONS_PER_CAT);
+  const clues = randClues.map((clue) => ({
+    question: clue.question,
+    answer: clue.answer,
+    showing: null,
+  }));
+  return { title, clues };
 }
 
 /** Fill the HTML table#jeopardy with the categories & cells for questions.
@@ -71,39 +89,59 @@ async function getCategory(catId) {
  */
 
 async function fillTable() {
-  $("body").empty();
+  const $board = $("#jeopardy");
+  $board.empty();
 
-  const $table = $("<table>").attr("id", "jeopardy");
   const $thead = $("<thead>");
-  const $tbody = $("<tbody>");
+  const $tr = $("<tr>");
+
+  // const $table = $("<table>").attr("id", "jeopardy");
+  // const $thead = $("<thead>");
+  // const $tbody = $("<tbody>");
 
   // Create header row
-  const $headerRow = $("<tr>");
+  // const $headerRow = $("<tr>");
   for (let cat of categories) {
-    $headerRow.append($("<th>").text(cat.title));
+    $tr.append($("<th>").text(cat.title));
   }
-  $thead.append($headerRow);
 
-  // Create clue rows
-  for (let i = 0; i < NUM_QUESTIONS_PER_CAT; i++) {
+  $thead.append($tr);
+  $board.append($thead);
+
+  const $tbody = $("<tbody>");
+  for (let clueIdx = 0; clueIdx < NUM_QUESTIONS_PER_CAT; clueIdx++) {
     const $row = $("<tr>");
-
-    for (let j = 0; j < NUM_CATEGORIES; j++) {
+    for (let catIdx = 0; catIdx < NUM_CATEGORIES; catIdx++) {
       const $cell = $("<td>")
-        .text("?")
-        .attr("data-cat", j)
-        .attr("data-clue", i);
-
+        .attr("data-cat", catIdx)
+        .attr("data-clue", clueIdx)
+        .text("?");
+      $cell.click(handleClick);
       $row.append($cell);
     }
-
     $tbody.append($row);
   }
+  $board.append($tbody);
+  // Create clue rows
+  // for (let i = 0; i < NUM_QUESTIONS_PER_CAT; i++) {
+  //   const $row = $("<tr>");
 
-  $table.append($thead).append($tbody);
-  $("body").append($table);
+  //   for (let j = 0; j < NUM_CATEGORIES; j++) {
+  //     const $cell = $("<td>")
+  //       .text("?")
+  //       .attr("data-cat", j)
+  //       .attr("data-clue", i);
 
-  $("#jeopardy").on("click", "td", handleClick);
+  //     $row.append($cell);
+  //   }
+
+  //   $tbody.append($row);
+  // }
+
+  // $table.append($thead).append($tbody);
+  // $("body").append($table);
+
+  // $("#jeopardy").on("click", "td", handleClick);
 }
 
 /** Handle clicking on a clue: show the question or answer.
@@ -135,11 +173,19 @@ function handleClick(evt) {
  * and update the button used to fetch data.
  */
 
-function showLoadingView() {}
+function showLoadingView() {
+  $("#jeopardy").hide();
+  const load = document.createElement("img");
+  load.src = "./Spinning_Wheel.gif";
+  document.body.appendChild(load);
+  // load.hide(); For some reaason this hides the board, not the loading gif
+}
 
 /** Remove the loading spinner and update the button used to fetch data. */
 
-function hideLoadingView() {}
+function hideLoadingView() {
+  $("#jeopardy").show();
+}
 
 /** Start game:
  *
@@ -149,16 +195,23 @@ function hideLoadingView() {}
  * */
 
 async function setupAndStart() {
-  categories = [];
+  // showLoadingView();
 
   const catIds = await getCategoryIds();
+  categories = await Promise.all(catIds.map((id) => getCategory(id)));
 
-  for (let id of catIds) {
-    const category = await getCategory(id);
-    categories.push(category);
-  }
+  const table = document.createElement("table");
+  table.setAttribute("id", "jeopardy");
+  table.innerHTML = "<thead></thead><tbody></tbody>";
+  document.body.appendChild(table);
 
-  fillTable();
+  // for (let id of catIds) {
+  //   const category = await getCategory(id);
+  //   categories.push(category);
+  // }
+
+  await fillTable();
+  hideLoadingView();
 }
 
 /** On click of start / restart button, set up game. */
@@ -177,4 +230,6 @@ async function setupAndStart() {
 
 // start();
 
-$(setupAndStart);
+// buttonStart.click(setupAndStart);
+// $(setupAndStart);
+
