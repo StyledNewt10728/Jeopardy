@@ -26,7 +26,7 @@ const buttonStart = document.createElement("button");
 buttonStart.textContent = "Start!";
 buttonStart.addEventListener("click", () => {
   // load.hide(); Still connected to the entire board, no idea why
-  $(setupAndStart);
+  setupAndStart();
   buttonStart.textContent = "Restart?";
 });
 document.body.appendChild(buttonStart);
@@ -35,6 +35,7 @@ let categories = [];
 const NUM_CATEGORIES = 6;
 const cat_count = 10;
 const NUM_QUESTIONS_PER_CAT = 5;
+let $loader;
 
 /** Get NUM_CATEGORIES random category from API.
  *
@@ -175,15 +176,22 @@ function handleClick(evt) {
 
 function showLoadingView() {
   $("#jeopardy").hide();
-  const load = document.createElement("img");
-  load.src = "./Spinning_Wheel.gif";
-  document.body.appendChild(load);
+  if (!$loader) {
+    $loader = $("<img>")
+      .attr("src", "https://i.gifer.com/g0R9.gif")
+      .attr("id", "loading");
+
+    $("body").append($loader);
+  }
+
   // load.hide(); For some reaason this hides the board, not the loading gif
 }
+$loader.show();
 
 /** Remove the loading spinner and update the button used to fetch data. */
 
 function hideLoadingView() {
+  if ($loader) $loader.hide();
   $("#jeopardy").show();
 }
 
@@ -195,14 +203,19 @@ function hideLoadingView() {
  * */
 
 async function setupAndStart() {
-  // showLoadingView();
+  showLoadingView();
+
+  const oldTable = document.getElementById("jeopardy");
+  if (oldTable) {
+    oldTable.remove();
+  }
 
   const catIds = await getCategoryIds();
   categories = await Promise.all(catIds.map((id) => getCategory(id)));
 
   const table = document.createElement("table");
   table.setAttribute("id", "jeopardy");
-  table.innerHTML = "<thead></thead><tbody></tbody>";
+  // table.innerHTML = "<thead></thead><tbody></tbody>";
   document.body.appendChild(table);
 
   // for (let id of catIds) {
@@ -232,4 +245,3 @@ async function setupAndStart() {
 
 // buttonStart.click(setupAndStart);
 // $(setupAndStart);
-
